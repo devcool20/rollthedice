@@ -1,5 +1,5 @@
-import React, {useState, useRef} from 'react';
-import type {PropsWithChildren} from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import type { PropsWithChildren } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import ReactNativeHapticFeedback from "react-native-haptic-feedback";
+import Sound from 'react-native-sound';
 
 import DiceOne from '../assets/One.png';
 import DiceTwo from '../assets/Two.png';
@@ -28,7 +29,7 @@ const options = {
   ignoreAndroidSystemSettings: false,
 };
 
-const Dice = ({imageUrl}: DiceProps): JSX.Element => {
+const Dice = ({ imageUrl }: DiceProps): JSX.Element => {
   return (
     <View>
       <Image style={styles.diceImage} source={imageUrl} />
@@ -40,6 +41,28 @@ function App(): JSX.Element {
   const [diceImage, setDiceImage] = useState<ImageSourcePropType>(DiceSix);
   const translateXAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
+
+  // Load the sound
+  useEffect(() => {
+    Sound.setCategory('Playback');
+  }, []);
+
+  const playSound = () => {
+    const sound = new Sound(require('../assets/dice.mp3'), Sound.MAIN_BUNDLE, (error) => {
+      if (error) {
+        console.log('Failed to load the sound', error);
+        return;
+      }
+      // Play the sound
+      sound.play((success) => {
+        if (!success) {
+          console.log('Sound playback failed');
+        }
+        // Release the sound resource when playback is done
+        sound.release();
+      });
+    });
+  };
 
   const rollDiceOnTap = () => {
     let randomNumber = Math.floor(Math.random() * 6) + 1;
@@ -84,6 +107,8 @@ function App(): JSX.Element {
         useNativeDriver: true,
       }).start();
     });
+
+    // Play the sound
   };
 
   return (
@@ -92,9 +117,10 @@ function App(): JSX.Element {
         onPress={() => {
           ReactNativeHapticFeedback.trigger("impactLight", options);
           rollDiceOnTap();
+          playSound();
         }}
       >
-        <Animated.View style={{transform: [{translateX: translateXAnim}]}}>
+        <Animated.View style={{ transform: [{ translateX: translateXAnim }] }}>
           <Dice imageUrl={diceImage} />
         </Animated.View>
       </Pressable>
