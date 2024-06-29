@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import type { PropsWithChildren } from 'react';
 import {
   StyleSheet,
@@ -10,8 +10,8 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
+import Sound from 'react-native-sound'
 import ReactNativeHapticFeedback from "react-native-haptic-feedback";
-import Sound from 'react-native-sound';
 
 import DiceOne from '../assets/One.png';
 import DiceTwo from '../assets/Two.png';
@@ -37,32 +37,30 @@ const Dice = ({ imageUrl }: DiceProps): JSX.Element => {
   );
 };
 
+       const playSound = () => {
+        var dice = new Sound('dice.mp3', Sound.MAIN_BUNDLE, (error) => {
+          if (error) {
+            console.log('failed to load the sound', error);
+            return;
+          }
+          // loaded successfully
+          console.log('duration in seconds: ' + dice.getDuration() + 'number of channels: ' + dice.getNumberOfChannels());
+        
+          // Play the sound with an onEnd callback
+          dice.play((success) => {
+            if (success) {
+              console.log('successfully finished playing');
+            } else {
+              console.log('playback failed due to audio decoding errors');
+            }
+          });
+        });
+}
+
 function App(): JSX.Element {
   const [diceImage, setDiceImage] = useState<ImageSourcePropType>(DiceSix);
   const translateXAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width;
-
-  // Load the sound
-  useEffect(() => {
-    Sound.setCategory('Playback');
-  }, []);
-
-  const playSound = () => {
-    const sound = new Sound(require('../assets/dice.mp3'), Sound.MAIN_BUNDLE, (error) => {
-      if (error) {
-        console.log('Failed to load the sound', error);
-        return;
-      }
-      // Play the sound
-      sound.play((success) => {
-        if (!success) {
-          console.log('Sound playback failed');
-        }
-        // Release the sound resource when playback is done
-        sound.release();
-      });
-    });
-  };
 
   const rollDiceOnTap = () => {
     let randomNumber = Math.floor(Math.random() * 6) + 1;
@@ -92,6 +90,8 @@ function App(): JSX.Element {
         break;
     }
 
+    playSound();
+
     // Start the roll-out animation
     Animated.timing(translateXAnim, {
       toValue: screenWidth,
@@ -108,7 +108,7 @@ function App(): JSX.Element {
       }).start();
     });
 
-    // Play the sound
+    ReactNativeHapticFeedback.trigger("impactLight", options);
   };
 
   return (
@@ -117,7 +117,6 @@ function App(): JSX.Element {
         onPress={() => {
           ReactNativeHapticFeedback.trigger("impactLight", options);
           rollDiceOnTap();
-          playSound();
         }}
       >
         <Animated.View style={{ transform: [{ translateX: translateXAnim }] }}>
